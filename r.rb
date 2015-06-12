@@ -90,7 +90,9 @@ module Makermap
       @ws = google_session.spreadsheet_by_key(WORKSHEET_KEY).worksheets[0]
     end
 
-    alias_method :refresh_google_doc, :open_google_doc
+    def refresh_google_doc
+      ws.reload
+    end
 
     def populate_geo_data(start = 1)
       begin
@@ -114,6 +116,7 @@ module Makermap
 
   end
 end
+
 
 su = Makermap::SpreadsheetUpdater.new
 su.populate_geo_data
