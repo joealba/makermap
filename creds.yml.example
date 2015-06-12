@@ -3,6 +3,11 @@
   :consumer_secret: MY
   :access_token: FIREBIRD
   :access_token_secret: KEYS
+:google_spreadsheet:
+  :document_key: '1cRpkQvo8pz8chVi0JdhtHmJ0uv3uL8nUfoi-MkyXoJ8'
 :google:
   :client_id: YOUMUSTCHILL
   :client_secret: IHAVEHIDDENYOURKEYS
+## GOOGLE NOTES:
+##  - https://console.developers.google.com//start/api?id=drive&credential=client_key
+##  - Then create a new Client ID -- type: "Native application"
