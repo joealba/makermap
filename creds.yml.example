@@ -1,0 +1,8 @@
+:twitter:
+  :consumer_key: GIVEME
+  :consumer_secret: MY
+  :access_token: FIREBIRD
+  :access_token_secret: KEYS
+:google:
+  :client_id: YOUMUSTCHILL
+  :client_secret: IHAVEHIDDENYOURKEYS
