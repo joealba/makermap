@@ -97,7 +97,9 @@ module Makermap
     def populate_geo_data(start = 1)
       begin
         (start.to_i..ws.num_rows).each do |row|
-          next if ws[row, 5] != '' ## Skip if geo already populated
+          puts row
+          ## Skip if geo already populated
+          next if ws[row, 5] != ''
 
           tweet_id = ws[row, 3][/(\d+)\s*$/]
           t = twitter_client.get_tweet_by_id tweet_id
@@ -106,12 +108,13 @@ module Makermap
           geo_info = t.geo
           puts "#{row}: #{ws[row, 3]}"
           puts "  GEO: #{geo_info}"
-          ws[row, 5] = geo_info || 'nil'
+          ws[row, 5] = geo_info.to_s || 'nil'
         end
       rescue ::Twitter::Error::NotFound
         ## The tweet is gone
       end
 
+      ws.save
     end
 
   end
@@ -122,4 +125,4 @@ su = Makermap::SpreadsheetUpdater.new
 su.populate_geo_data
 
 ## Different starting points
-# su.populate_geo_data 100
+# su.populate_geo_data 1000
