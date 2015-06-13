@@ -109,7 +109,7 @@ module Makermap
     def desc_tag_by_tweet(row, t)
       return 'rt' if t.retweet? ## Skip retweets
 
-      if t.place
+      if t.place && t.place.class != ::Twitter::NullObject
         return 'place'
       end
 
@@ -127,9 +127,8 @@ module Makermap
             t = twitter_client.get_tweet_by_id tweet_id
             desc = desc_tag_by_tweet(row, t)
 
-            # binding.pry
-
-            if t.place
+            if desc == 'place'
+              # byebug
               ws[row, 6] = t.place.full_name
               ws[row, 7] = t.place.bounding_box.coordinates.first.first
             end
