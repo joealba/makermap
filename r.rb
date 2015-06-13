@@ -99,8 +99,11 @@ module Makermap
 
       (start..finish).each do |row|
         ## Skip if geo already populated
-        if ws[row, 5] != ''
-          print "."
+        next if ws[row, 5] != ''
+
+        ## Save on the twitter quota
+        if ws[row, 2] =~ /RT /
+          ws[row, 5] = 'rt'
           next
         end
 
