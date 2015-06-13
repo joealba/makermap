@@ -121,7 +121,7 @@ module Makermap
 
       (start..finish).each do |row|
         desc = desc_tag_by_row(row)
-        if !desc || desc == 'none' || desc == 'place'
+        if !desc || desc == 'none' # || desc == 'place'
           tweet_id = get_tweet_id_from_row(row)
           begin
             t = twitter_client.get_tweet_by_id tweet_id
