@@ -33,7 +33,7 @@ module Makermap
 
     def initialize
       access_token = get_local_access_token
-      access_token = setup_access_token if access_token == ''
+      access_token = setup_access_token if !access_token || access_token == ''
       @session = GoogleDrive.login_with_oauth(access_token)
     end
 
@@ -78,7 +78,7 @@ module Makermap
   class SpreadsheetUpdater
     WORKSHEET_KEY = YAML.load_file(File.join(File.dirname(__FILE__), 'creds.yml'))[:google_spreadsheet][:document_key]
 
-    attr_reader :google_session, :ws, :twitter_client
+    attr_accessor :google_session, :twitter_client, :ws
 
     def initialize
       @google_session = Makermap::Spreadsheet.new.session
@@ -94,27 +94,36 @@ module Makermap
       ws.reload
     end
 
-    def populate_geo_data(start = 1)
-      begin
-        (start.to_i..ws.num_rows).each do |row|
-          puts row
-          ## Skip if geo already populated
-          next if ws[row, 5] != ''
+    def populate_geo_data(start = 1, finish = nil)
+      finish ||= ws.num_rows
 
-          tweet_id = ws[row, 3][/(\d+)\s*$/]
-          t = twitter_client.get_tweet_by_id tweet_id
-          next if t.retweet?  ## Skip if retweet -- not likely to have geo data?
-
-          geo_info = t.geo
-          puts "#{row}: #{ws[row, 3]}"
-          puts "  GEO: #{geo_info}"
-          ws[row, 5] = geo_info.to_s || 'nil'
+      (start..finish).each do |row|
+        ## Skip if geo already populated
+        if ws[row, 5] != ''
+          print "."
+          next
         end
-      rescue ::Twitter::Error::NotFound
-        ## The tweet is gone
-      end
 
-      ws.save
+        tweet_id = ws[row, 3][/(\d+)\s*$/]
+        begin
+          t = twitter_client.get_tweet_by_id tweet_id
+
+          ## Skip if retweet -- not likely to have geo data?
+          if t.retweet?
+            ws[row, 5] = 'rt'
+            next
+          end
+
+          geo_info = t.geo? ? t.geo : 'no geo'
+          ws[row, 5] = geo_info.to_s
+        rescue ::Twitter::Error::NotFound
+          ws[row, 5] = 'nil'
+        rescue ::Twitter::Error::TooManyRequests
+          puts "TooManyRequests"
+          break
+        end
+
+      end
     end
 
   end
@@ -122,7 +131,8 @@ end
 
 
 su = Makermap::SpreadsheetUpdater.new
-su.populate_geo_data
+su.populate_geo_data(101, 300)
+su.ws.save
 
 ## Different starting points
 # su.populate_geo_data 1000
