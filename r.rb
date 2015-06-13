@@ -32,16 +32,16 @@ module Makermap
     attr_reader :session
 
     def initialize
-      access_token = get_local_access_token
-      access_token = setup_access_token if !access_token || access_token == ''
+      access_token = self.class.get_local_access_token
+      access_token = self.class.setup_access_token if !access_token || access_token == ''
       @session = GoogleDrive.login_with_oauth(access_token)
     end
 
-    def access_token_filename
+    def self.access_token_filename
       File.join(File.dirname(__FILE__), '.access_token')
     end
 
-    def get_local_access_token
+    def self.get_local_access_token
       begin
         File.read(access_token_filename).chomp
       rescue Errno::ENOENT
@@ -49,13 +49,13 @@ module Makermap
       end
     end
 
-    def save_local_access_token(access_token)
+    def self.save_local_access_token(access_token)
       File.open(access_token_filename, 'w') do |fh|
         fh.write access_token
       end
     end
 
-    def setup_access_token
+    def self.setup_access_token
       client = ::Google::APIClient.new
       auth = client.authorization
       auth.client_id = CONFIG[:client_id]
@@ -83,7 +83,12 @@ module Makermap
     def initialize
       @google_session = Makermap::Spreadsheet.new.session
       @twitter_client = Makermap::Twitter.new
-      open_google_doc
+      begin
+        open_google_doc
+      rescue Google::APIClient::AuthorizationError
+        Makermap::Spreadsheet.setup_access_token
+        open_google_doc
+      end
     end
 
     def open_google_doc
@@ -94,39 +99,44 @@ module Makermap
       ws.reload
     end
 
+    def get_tweet_id_from_row(row)
+      ws[row, 3][/(\d+)\s*$/]
+    end
+
+    def desc_tag_by_row(row)
+      return ws[row, 5] if ws[row, 5] != '' ## Skip if desc tag already populated
+      return 'rt' if ws[row, 2] =~ /RT /    ## Skip retweets (and save on twitter api quota)
+      return nil
+    end
+
+    def desc_tag_by_tweet(row, t)
+      return 'rt' if t.retweet? ## Skip retweets
+      return t.geo? ? 'geo' : 'none'
+    end
+
     def populate_geo_data(start = 1, finish = nil)
       finish ||= ws.num_rows
 
       (start..finish).each do |row|
-        ## Skip if geo already populated
-        next if ws[row, 5] != ''
-
-        ## Save on the twitter quota
-        if ws[row, 2] =~ /RT /
-          ws[row, 5] = 'rt'
-          next
-        end
-
-        tweet_id = ws[row, 3][/(\d+)\s*$/]
-        begin
-          t = twitter_client.get_tweet_by_id tweet_id
-
-          ## Skip if retweet -- not likely to have geo data?
-          if t.retweet?
-            ws[row, 5] = 'rt'
-            next
+        desc = desc_tag_by_row(row)
+        if !desc
+          tweet_id = get_tweet_id_from_row(row)
+          begin
+            t = twitter_client.get_tweet_by_id tweet_id
+            desc = desc_tag_by_tweet(row, t)
+            ws[row, 6] = t.geo if t.geo?
+          rescue ::Twitter::Error::NotFound
+            desc = 'deleted'
+          rescue ::Twitter::Error::TooManyRequests
+            puts "TooManyRequests"
+            break
           end
 
-          desc = t.geo? ? 'geo' : 'none'
-          ws[row, 5] = desc
           ws[row, 6] = t.geo if t.geo?
-        rescue ::Twitter::Error::NotFound
-          ws[row, 5] = 'nil'
-        rescue ::Twitter::Error::TooManyRequests
-          puts "TooManyRequests"
-          break
         end
 
+        next if ws[row, 5] == desc ## Not sure if this saves anything
+        ws[row, 5] = desc
       end
     end
 
@@ -135,7 +145,8 @@ end
 
 
 su = Makermap::SpreadsheetUpdater.new
-su.populate_geo_data(101, 300)
+# su.populate_geo_data(101, 300)
+su.populate_geo_data
 su.ws.save
 
 ## Different starting points
