@@ -76,12 +76,13 @@ module Makermap
     attr_accessor :google_session, :twitter_client, :ws
 
     def initialize
-      @google_session = Makermap::Spreadsheet.new.session
       @twitter_client = Makermap::Twitter.new
+      @google_session = Makermap::Spreadsheet.new.session
       begin
         open_google_doc
       rescue Google::APIClient::AuthorizationError
         Makermap::Spreadsheet.setup_access_token
+        @google_session = Makermap::Spreadsheet.new.session
         open_google_doc
       end
     end
