@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'makermap'
+require './makermap'
 
 su = Makermap::SpreadsheetUpdater.new
 su.populate_geo_data
