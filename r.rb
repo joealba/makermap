@@ -3,7 +3,8 @@
 require './makermap'
 
 su = Makermap::SpreadsheetUpdater.new
-su.populate_geo_data
+su.populate_geo_data(1, 900)
+# su.populate_geo_data(902)
 su.ws.save
 
 ## Should have geo data

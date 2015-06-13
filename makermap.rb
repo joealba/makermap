@@ -121,7 +121,7 @@ module Makermap
 
       (start..finish).each do |row|
         desc = desc_tag_by_row(row)
-        if !desc || desc == 'none' # || desc == 'place'
+        if !desc #|| desc == 'none' || desc == 'place'
           tweet_id = get_tweet_id_from_row(row)
           begin
             t = twitter_client.get_tweet_by_id tweet_id
@@ -131,6 +131,7 @@ module Makermap
               # byebug
               ws[row, 6] = t.place.full_name
               ws[row, 7] = t.place.bounding_box.coordinates.first.first
+              ws[row, 8] = t.place.bounding_box.coordinates
             end
 
           rescue ::Twitter::Error::NotFound
@@ -139,8 +140,6 @@ module Makermap
             puts "TooManyRequests"
             break
           end
-
-          ws[row, 6] = t.geo if t.geo?
         end
 
         next if ws[row, 5] == desc ## Not sure if this saves anything
