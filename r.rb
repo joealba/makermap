@@ -114,8 +114,9 @@ module Makermap
             next
           end
 
-          geo_info = t.geo? ? t.geo : 'no geo'
-          ws[row, 5] = geo_info.to_s
+          desc = t.geo? ? 'geo' : 'none'
+          ws[row, 5] = desc
+          ws[row, 6] = t.geo if t.geo?
         rescue ::Twitter::Error::NotFound
           ws[row, 5] = 'nil'
         rescue ::Twitter::Error::TooManyRequests
