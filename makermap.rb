@@ -2,7 +2,7 @@ require 'yaml'
 require 'twitter'
 require "google/api_client"
 require "google_drive"
-require "pry"
+require "byebug"
 
 module Makermap
 
